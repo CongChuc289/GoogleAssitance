@@ -6,15 +6,18 @@
 #define AIO_SERVER      "io.adafruit.com" //Adafruit Server
 #define AIO_SERVERPORT  1883
 #define AIO_USERNAME    "ChucDao"            // Username
-#define AIO_KEY         "aio_EWLw23ukozuy9tlxyS3Vd99CPI4r"   // Auth Key
+#define AIO_KEY         "aio_CkeQ44NE4LsS0gm4gDjQGUOITuqd"   // Auth Key
 #define LED1 D1
 #define LED2 D2
 #define button1 D5
 #define button2 D6
+uint32_t x = 0;
+uint8_t Data_Send[10];
 WiFiClient client;
 Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO_KEY);
 Adafruit_MQTT_Subscribe Device1 = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME"/feeds/Device1");
 Adafruit_MQTT_Subscribe Device2 = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME"/feeds/Device2");
+Adafruit_MQTT_Publish Sensor    = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/Sensor");
 void setup() {
   Serial.begin(9600);
   pinMode(LED1, OUTPUT);
@@ -47,11 +50,11 @@ void loop() {
   while ((subscription = mqtt.readSubscription(5000))) {
     if (subscription == &Device1) {
       if (!strcmp((char*) Device1.lastread, "ON1")) {
-        digitalWrite(LED1, HIGH);
+        digitalWrite(LED1, LOW);
         Serial.println("Bat Den 1");
       }
       else if (!strcmp((char*) Device1.lastread, "OFF1")) {
-        digitalWrite(LED1, LOW);
+        digitalWrite(LED1, HIGH);
         Serial.println("Tat Den 1");
       }
     }
@@ -61,24 +64,27 @@ void loop() {
         Serial.println("Bat Den 2");
       }
       else if (!strcmp((char*) Device2.lastread, "OFF2")) {
-        digitalWrite(LED_BUILTIN, HIGH);
+        digitalWrite(LED2, HIGH);
         Serial.println("Tat Den 2");
       }
     }
   }
+  Serial.print(F("\nSending photocell val "));
+  Serial.print(x);
+  Serial.print("...");
+  if (! Sensor.publish(x++)) {
+    Serial.println(F("Failed"));
+  } else {
+    Serial.println(F("OK!"));
+  }
 }
-
 void MQTT_connect() {
   int8_t ret;
-
   if (mqtt.connected()) {
     return;
   }
-
   Serial.print("Connecting to MQTT... ");
-
   uint8_t retries = 3;
-
   while ((ret = mqtt.connect()) != 0) {
     Serial.println(mqtt.connectErrorString(ret));
     Serial.println("Retrying MQTT connection in 5 seconds...");
